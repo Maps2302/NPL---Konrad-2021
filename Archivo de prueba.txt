@@ -1,0 +1,122 @@
+# TALLER ACADEMIA DEPORTIVA
+
+MariaDB [(none)]> create database horario;
+Query OK, 1 row affected (0.003 sec)
+
+MariaDB [(none)]> use horario;
+Database changed
+MariaDB [horario]>
+
+#PUNTO 1
+MariaDB [horario]> create table asignatura(
+    -> id INT primary key,
+    -> codigo varchar(10) unique,
+    -> nombre varchar(50) unique
+    -> );
+Query OK, 0 rows affected (0.312 sec)
+
+MariaDB [horario]> create table docente(
+    -> id int primary key,
+    -> nombre varchar(100),
+    -> apellidos varchar(200)
+    -> );
+Query OK, 0 rows affected (0.322 sec)
+
+#PUNTO 2 
+MariaDB [horario]> create table localidad(
+    -> id int primary key,
+    -> nombre varchar(100) unique,
+    -> numhabitantes int
+    -> );
+Query OK, 0 rows affected (0.453 sec)
+
+
+#PUNTO 3
+MariaDB [horario]> create table estudiante(
+    -> id int primary key,
+    -> nombres varchar(100),
+    -> apellidos varchar(100),
+    -> sexo varchar(1),
+    -> fechaNacimiento date,
+    -> ingresos decimal(7,2),
+    -> localidadId int,
+    -> CONSTRAINT localidad_fk FOREIGN KEY (localidadId) REFERENCES localidad (id));
+Query OK, 0 rows affected (0.728 sec)
+
+MariaDB [horario]> create table horario(
+    -> id INT primary key,
+    -> asignaturaID varchar(10),
+    -> diasemana varchar(100),
+    -> horainicio INT,
+    -> horafin INT,
+    -> docenteID int,
+    -> constraint asignatura_fk foreign key(asignaturaID) references asignatura(codigo),
+    -> constraint docente_fk foreign key(docenteID) references docente(id));
+Query OK, 0 rows affected (0.291 sec)
+
+
+#PUNTO 4
+MariaDB [horario]> create table estHorario(
+    -> id int primary key,
+    -> horarioID int,
+    -> estudianteID int,
+    -> constraint horario_fk foreign key(horarioID) references horario(id),
+    -> constraint estudiante_fk foreign key(estudianteID) references estudiante(id),
+    -> constraint esthor_uk unique key(horarioID, estudianteID));
+Query OK, 0 rows affected (0.346 sec)
+
+
+#CONSULTA 1.1
+create view datos_estudiantes as
+select count(e.id),
+       l.localidad,
+       e.sexo
+from estudiante e
+inner join localidad l 
+on e.localidadID = l.id
+group by l.localidad
+order by 2 asc
+
+#CONSULTA 1.2
+create view horario_estudiantesnuevos as 
+select e.nombres,
+       e.apellidos,
+       h.diasemana,
+       h.horainicio,
+       h.horafin
+from estudiante e
+inner join esthorario eh 
+on e.id = eh.estudianteID
+inner join horario h 
+on eh.horarioID = h.id
+where e.nombres in("Carolina", "Faustino","Carlos", "Isabella") 
+and e.apellidos in("Arias", "Asprilla", "Valderrama", "Echeverry")
+order by 1
+
+#CONSULTA 1.3
+
+create view lista_docentes_estudiantes as
+select d.id,
+       d.nombre NombreDocente,
+       d.apellidos ApellidosDocente,
+       e.nombres NombreEstudiante,
+       e.apellidos ApellidoEstudiante
+from docente d 
+inner join horario h 
+on h.docenteID = d.id
+inner join esthorario eh 
+on eh.horarioID = h.id 
+inner join estudiante e 
+on e.id = eh.estudianteID
+group by d.id, e.nombres
+
+#CONSULTA 4
+update estudiante e
+inner join esthorario eh 
+on eh.estudianteID = e.id 
+inner join horario h 
+on h.id = eh.horarioID
+inner join docente d 
+on d.id = h.docenteID
+set e.ingresos = ingresos*1.1
+where d.id = 1
